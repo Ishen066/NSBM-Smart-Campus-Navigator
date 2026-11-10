@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../core/theme/app_theme.dart';
 import '../map/campus_map_screen.dart';
 import '../events/campus_events_screen.dart';
+import '../profile/student_profile_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -34,7 +35,9 @@ class _HomeScreenState extends State<HomeScreen> {
                 ? const CampusMapScreen()
                 : _selectedIndex == 2
                     ? const CampusEventsScreen()
-                    : _buildOtherPage(),
+                    : _selectedIndex == 3
+                      ? const StudentProfileScreen()
+                      : _buildOtherPage(),
       ),
       bottomNavigationBar: NavigationBar(
         selectedIndex: _selectedIndex,
