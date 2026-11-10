@@ -1,6 +1,7 @@
 
 import 'package:flutter/material.dart';
 import '../../core/theme/app_theme.dart';
+import '../map/campus_map_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -26,10 +27,12 @@ class _HomeScreenState extends State<HomeScreen> {
     return Scaffold(
       backgroundColor: AppTheme.background,
       body: SafeArea(
-        child: _selectedIndex == 0
-            ? _buildHome()
-            : _buildOtherPage(),
-      ),
+  child: _selectedIndex == 0
+      ? _buildHome()
+      : _selectedIndex == 1
+          ? const CampusMapScreen()
+          : _buildOtherPage(),
+),
       bottomNavigationBar: NavigationBar(
         selectedIndex: _selectedIndex,
         onDestinationSelected: (index) {
