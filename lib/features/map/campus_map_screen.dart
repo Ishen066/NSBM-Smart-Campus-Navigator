@@ -475,6 +475,9 @@ class _CampusMapScreenState extends State<CampusMapScreen> {
               // Current Location Section
               _buildCurrentLocationCard(),
 
+              // Campus Destination Selection
+              _buildNavigationCard(),
+
               // Selected Building Details
               if (_selectedBuilding != null)
                 _buildSelectedBuilding(),
@@ -553,6 +556,129 @@ class _CampusMapScreenState extends State<CampusMapScreen> {
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildNavigationCard() {
+    return Container(
+      margin: const EdgeInsets.fromLTRB(16, 0, 16, 18),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFE1E8EF)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Row(
+            children: [
+              Icon(
+                Icons.directions_walk,
+                color: Color(0xFF087F5B),
+              ),
+              SizedBox(width: 9),
+              Text(
+                'Campus Navigation',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF071B35),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          const Text(
+            'Choose your destination',
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 8),
+          DropdownButtonFormField<String>(
+            initialValue: _selectedBuilding,
+            isExpanded: true,
+            hint: const Text('Select a campus building'),
+            decoration: InputDecoration(
+              filled: true,
+              fillColor: const Color(0xFFF4F7FB),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide.none,
+              ),
+            ),
+            items: _buildings.map((building) {
+              return DropdownMenuItem<String>(
+                value: building['name'] as String,
+                child: Text(building['name'] as String),
+              );
+            }).toList(),
+            onChanged: (value) {
+              setState(() {
+                _selectedBuilding = value;
+              });
+            },
+          ),
+          const SizedBox(height: 14),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: () {
+                if (_selectedBuilding == null) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Please select a destination.'),
+                    ),
+                  );
+                  return;
+                }
+
+                if (_currentPosition == null) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text(
+                        'Please get your current GPS location first.',
+                      ),
+                    ),
+                  );
+                  return;
+                }
+
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      'Destination selected: $_selectedBuilding. '
+                      'Walking route data is not configured yet.',
+                    ),
+                  ),
+                );
+              },
+              icon: const Icon(Icons.route),
+              label: const Text('Plan Walking Route'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF087F5B),
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Walking paths and building entrances must be verified '
+            'before accurate routes, distances and walking times '
+            'can be displayed.',
+            style: TextStyle(
+              fontSize: 11,
+              color: Colors.blueGrey.shade600,
+            ),
+          ),
+        ],
       ),
     );
   }
