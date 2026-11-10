@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import '../../core/theme/app_theme.dart';
 import '../map/campus_map_screen.dart';
+import '../events/campus_events_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -27,12 +28,14 @@ class _HomeScreenState extends State<HomeScreen> {
     return Scaffold(
       backgroundColor: AppTheme.background,
       body: SafeArea(
-  child: _selectedIndex == 0
-      ? _buildHome()
-      : _selectedIndex == 1
-          ? const CampusMapScreen()
-          : _buildOtherPage(),
-),
+        child: _selectedIndex == 0
+            ? _buildHome()
+            : _selectedIndex == 1
+                ? const CampusMapScreen()
+                : _selectedIndex == 2
+                    ? const CampusEventsScreen()
+                    : _buildOtherPage(),
+      ),
       bottomNavigationBar: NavigationBar(
         selectedIndex: _selectedIndex,
         onDestinationSelected: (index) {
@@ -529,66 +532,63 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildEventCard() {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(
-          color: Colors.grey.shade100,
+    return InkWell(
+      borderRadius: BorderRadius.circular(18),
+      onTap: () => setState(() => _selectedIndex = 2),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: Colors.grey.shade100),
         ),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 65,
-            height: 72,
-            decoration: BoxDecoration(
-              color: const Color(0xFFE4F5EE),
-              borderRadius: BorderRadius.circular(13),
+        child: Row(
+          children: [
+            Container(
+              width: 65,
+              height: 72,
+              decoration: BoxDecoration(
+                color: const Color(0xFFE4F5EE),
+                borderRadius: BorderRadius.circular(13),
+              ),
+              child: const Icon(
+                Icons.event_available_rounded,
+                color: AppTheme.green,
+                size: 32,
+              ),
             ),
-            child: const Icon(
-              Icons.event_available_rounded,
+            const SizedBox(width: 14),
+            const Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Campus Events',
+                    style: TextStyle(
+                      color: AppTheme.navy,
+                      fontSize: 15,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  SizedBox(height: 6),
+                  Text(
+                    'Discover campus events, workshops and announcements.',
+                    style: TextStyle(
+                      fontSize: 11,
+                      height: 1.4,
+                      color: Colors.blueGrey,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const Icon(
+              Icons.arrow_forward_ios_rounded,
+              size: 15,
               color: AppTheme.green,
-              size: 32,
             ),
-          ),
-
-          const SizedBox(width: 14),
-
-          const Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Campus Events',
-                  style: TextStyle(
-                    color: AppTheme.navy,
-                    fontSize: 15,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-
-                SizedBox(height: 6),
-
-                Text(
-                  'Discover upcoming university events and activities.',
-                  style: TextStyle(
-                    fontSize: 11,
-                    height: 1.4,
-                    color: Colors.blueGrey,
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-          const Icon(
-            Icons.arrow_forward_ios_rounded,
-            size: 15,
-            color: AppTheme.green,
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
