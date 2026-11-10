@@ -1,7 +1,5 @@
 
-import 'dart:async';
 import 'package:flutter/material.dart';
-
 
 import '../home/home_screen.dart';
 
@@ -43,24 +41,6 @@ class _SplashScreenState extends State<SplashScreen>
     );
 
     _controller.forward();
-
-    Timer(const Duration(seconds: 4), () {
-      if (!mounted) return;
-
-      Navigator.of(context).pushReplacement(
-        PageRouteBuilder(
-          pageBuilder: (_, animation, secondaryAnimation) =>
-              const HomeScreen(),
-          transitionsBuilder: (_, animation, secondaryAnimation, child) {
-            return FadeTransition(
-              opacity: animation,
-              child: child,
-            );
-          },
-          transitionDuration: const Duration(milliseconds: 700),
-        ),
-      );
-    });
   }
 
   @override
@@ -69,19 +49,35 @@ class _SplashScreenState extends State<SplashScreen>
     super.dispose();
   }
 
+  void _getStarted() {
+    Navigator.of(context).pushReplacement(
+      PageRouteBuilder(
+        pageBuilder: (_, animation, secondaryAnimation) =>
+            const HomeScreen(),
+        transitionsBuilder: (_, animation, secondaryAnimation, child) {
+          return FadeTransition(
+            opacity: animation,
+            child: child,
+          );
+        },
+        transitionDuration: const Duration(milliseconds: 700),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: Stack(
         fit: StackFit.expand,
         children: [
-          // NSBM Campus Background
+          // Campus Background
           Image.asset(
             'assets/images/campus.jpg',
             fit: BoxFit.cover,
           ),
 
-          // Dark overlay
+          // Dark Background Overlay
           Container(
             decoration: BoxDecoration(
               gradient: LinearGradient(
@@ -96,7 +92,7 @@ class _SplashScreenState extends State<SplashScreen>
             ),
           ),
 
-          // Decorative glow
+          // Decorative Glow
           Positioned(
             top: -100,
             right: -90,
@@ -105,7 +101,8 @@ class _SplashScreenState extends State<SplashScreen>
               height: 280,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: const Color(0xFF38BDF8).withValues(alpha: 0.13),
+                color: const Color(0xFF38BDF8)
+                    .withValues(alpha: 0.13),
               ),
             ),
           ),
@@ -119,14 +116,14 @@ class _SplashScreenState extends State<SplashScreen>
                   children: [
                     const Spacer(flex: 2),
 
-                    // Official NSBM logo
+                    // NSBM Official Logo
                     Container(
-                      width: 155,
-                      height: 155,
+                      width: 145,
+                      height: 145,
                       padding: const EdgeInsets.all(15),
                       decoration: BoxDecoration(
                         color: Colors.white,
-                        borderRadius: BorderRadius.circular(30),
+                        borderRadius: BorderRadius.circular(28),
                         boxShadow: [
                           BoxShadow(
                             color: Colors.black.withValues(alpha: 0.25),
@@ -141,7 +138,7 @@ class _SplashScreenState extends State<SplashScreen>
                       ),
                     ),
 
-                    const SizedBox(height: 35),
+                    const SizedBox(height: 32),
 
                     const Text(
                       'NSBM',
@@ -153,7 +150,7 @@ class _SplashScreenState extends State<SplashScreen>
                       ),
                     ),
 
-                    const SizedBox(height: 5),
+                    const SizedBox(height: 6),
 
                     const Text(
                       'SMART CAMPUS',
@@ -178,54 +175,73 @@ class _SplashScreenState extends State<SplashScreen>
 
                     const SizedBox(height: 18),
 
-                    const Text(
-                      'Your Campus, One Step Away',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        color: Colors.white70,
-                        fontSize: 14,
-                        letterSpacing: 0.6,
+                    const Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 30),
+                      child: Text(
+                        'Your Campus, One Step Away',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          color: Colors.white70,
+                          fontSize: 14,
+                          letterSpacing: 0.6,
+                        ),
                       ),
                     ),
 
                     const Spacer(flex: 2),
 
-                    // Loading indicator
-                    const SizedBox(
-                      width: 28,
-                      height: 28,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2.5,
-                        valueColor: AlwaysStoppedAnimation<Color>(
-                          Color(0xFF8BE0BD),
+                    // Get Started Button
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 32),
+                      child: SizedBox(
+                        width: double.infinity,
+                        height: 58,
+                        child: ElevatedButton(
+                          onPressed: _getStarted,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF8BE0BD),
+                            foregroundColor: const Color(0xFF003D35),
+                            elevation: 8,
+                            shadowColor: const Color(0xFF8BE0BD)
+                                .withValues(alpha: 0.30),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(18),
+                            ),
+                          ),
+                          child: const Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Text(
+                                'GET STARTED',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w800,
+                                  letterSpacing: 2,
+                                ),
+                              ),
+                              SizedBox(width: 12),
+                              Icon(
+                                Icons.arrow_forward_rounded,
+                                size: 21,
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                     ),
 
-                    const SizedBox(height: 15),
-
-                    const Text(
-                      'PREPARING YOUR CAMPUS EXPERIENCE',
-                      style: TextStyle(
-                        color: Colors.white70,
-                        fontSize: 9,
-                        letterSpacing: 2,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-
-                    const SizedBox(height: 28),
+                    const SizedBox(height: 24),
 
                     const Text(
                       'NSBM GREEN UNIVERSITY',
                       style: TextStyle(
-                        color: Colors.white54,
+                        color: Colors.white70,
                         fontSize: 10,
                         letterSpacing: 2,
                       ),
                     ),
 
-                    const SizedBox(height: 22),
+                    const SizedBox(height: 25),
                   ],
                 ),
               ),
