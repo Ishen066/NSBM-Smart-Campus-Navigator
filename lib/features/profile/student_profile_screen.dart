@@ -1,6 +1,9 @@
 
 import 'package:flutter/material.dart';
+
+import '../../core/services/auth_service.dart';
 import '../../core/theme/app_theme.dart';
+import '../splash/splash_screen.dart';
 
 class StudentProfileScreen extends StatefulWidget {
   const StudentProfileScreen({super.key});
@@ -11,12 +14,69 @@ class StudentProfileScreen extends StatefulWidget {
 }
 
 class _StudentProfileScreenState extends State<StudentProfileScreen> {
-  String _studentName = 'NSBM Student';
-  String _studentId = 'Add your student ID';
-  String _degree = 'Add your degree programme';
-  String _batch = 'Add your academic batch';
-  String _email = 'Add your email address';
+  final AuthService _authService = AuthService();
 
+  String _studentName = 'Loading...';
+  String _studentId = 'Loading...';
+  String _degree = 'Loading...';
+  String _batch = 'Loading...';
+  String _email = 'Loading...';
+
+  bool _isLoading = true;
+  bool _isSaving = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadProfile();
+  }
+
+  // Load student information from Firestore.
+  Future<void> _loadProfile() async {
+    try {
+      final profile = await _authService.getStudentProfile();
+
+      if (!mounted) return;
+
+      if (profile == null) {
+        setState(() {
+          _studentName = 'NSBM Student';
+          _studentId = 'Not available';
+          _degree = 'Not available';
+          _batch = 'Not available';
+          _email = _authService.currentUser?.email ?? 'Not available';
+          _isLoading = false;
+        });
+        return;
+      }
+
+      setState(() {
+        _studentName =
+            profile['fullName']?.toString() ?? 'NSBM Student';
+        _studentId =
+            profile['studentId']?.toString() ?? 'Not available';
+        _degree =
+            profile['degreeProgramme']?.toString() ?? 'Not available';
+        _batch =
+            profile['academicBatch']?.toString() ?? 'Not available';
+        _email =
+            profile['email']?.toString() ??
+            _authService.currentUser?.email ??
+            'Not available';
+        _isLoading = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+
+      setState(() {
+        _isLoading = false;
+      });
+
+      _showMessage('Unable to load student profile.');
+    }
+  }
+
+  // Edit student profile.
   Future<void> _editProfile() async {
     final nameController =
         TextEditingController(text: _studentName);
@@ -26,8 +86,6 @@ class _StudentProfileScreenState extends State<StudentProfileScreen> {
         TextEditingController(text: _degree);
     final batchController =
         TextEditingController(text: _batch);
-    final emailController =
-        TextEditingController(text: _email);
 
     final result = await showDialog<Map<String, String>>(
       context: context,
@@ -48,7 +106,14 @@ class _StudentProfileScreenState extends State<StudentProfileScreen> {
                 _editField(idController, 'Student ID'),
                 _editField(degreeController, 'Degree Programme'),
                 _editField(batchController, 'Academic Batch'),
-                _editField(emailController, 'Email Address'),
+                const SizedBox(height: 5),
+                Text(
+                  'Email address cannot be changed here.',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.blueGrey.shade400,
+                  ),
+                ),
               ],
             ),
           ),
@@ -63,12 +128,18 @@ class _StudentProfileScreenState extends State<StudentProfileScreen> {
                 foregroundColor: Colors.white,
               ),
               onPressed: () {
+                if (nameController.text.trim().isEmpty ||
+                    idController.text.trim().isEmpty ||
+                    degreeController.text.trim().isEmpty ||
+                    batchController.text.trim().isEmpty) {
+                  return;
+                }
+
                 Navigator.pop(dialogContext, {
                   'name': nameController.text.trim(),
                   'id': idController.text.trim(),
                   'degree': degreeController.text.trim(),
                   'batch': batchController.text.trim(),
-                  'email': emailController.text.trim(),
                 });
               },
               child: const Text('Save Changes'),
@@ -82,31 +153,97 @@ class _StudentProfileScreenState extends State<StudentProfileScreen> {
     idController.dispose();
     degreeController.dispose();
     batchController.dispose();
-    emailController.dispose();
 
-    if (result != null && mounted) {
+    if (result == null || !mounted) return;
+
+    await _saveProfile(result);
+  }
+
+  // Save changes to Firestore.
+  Future<void> _saveProfile(Map<String, String> data) async {
+    setState(() {
+      _isSaving = true;
+    });
+
+    try {
+      await _authService.updateStudentProfile(
+        fullName: data['name']!,
+        studentId: data['id']!,
+        degreeProgramme: data['degree']!,
+        academicBatch: data['batch']!,
+      );
+
+      if (!mounted) return;
+
       setState(() {
-        _studentName =
-            result['name']!.isEmpty ? 'NSBM Student' : result['name']!;
-        _studentId =
-            result['id']!.isEmpty ? 'Add your student ID' : result['id']!;
-        _degree = result['degree']!.isEmpty
-            ? 'Add your degree programme'
-            : result['degree']!;
-        _batch = result['batch']!.isEmpty
-            ? 'Add your academic batch'
-            : result['batch']!;
-        _email = result['email']!.isEmpty
-            ? 'Add your email address'
-            : result['email']!;
+        _studentName = data['name']!;
+        _studentId = data['id']!;
+        _degree = data['degree']!;
+        _batch = data['batch']!;
+        _isSaving = false;
       });
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Profile updated successfully!'),
-          behavior: SnackBarBehavior.floating,
+      _showMessage('Profile updated successfully!');
+    } catch (e) {
+      if (!mounted) return;
+
+      setState(() {
+        _isSaving = false;
+      });
+
+      _showMessage('Unable to update profile. Please try again.');
+    }
+  }
+
+  // Logout confirmation and navigation.
+  Future<void> _logout() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          title: const Text('Logout'),
+          content: const Text(
+            'Are you sure you want to logout?',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () =>
+                  Navigator.pop(dialogContext, false),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.red,
+                foregroundColor: Colors.white,
+              ),
+              onPressed: () =>
+                  Navigator.pop(dialogContext, true),
+              child: const Text('Logout'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (confirmed != true || !mounted) return;
+
+    try {
+      // Sign out from Firebase.
+      await _authService.logout();
+
+      if (!mounted) return;
+
+      // Clear previous screens and open Splash Screen.
+      Navigator.of(context, rootNavigator: true).pushAndRemoveUntil(
+        MaterialPageRoute(
+          builder: (context) => const SplashScreen(),
         ),
+        (route) => false,
       );
+    } catch (e) {
+      if (!mounted) return;
+
+      _showMessage('Unable to logout. Please try again.');
     }
   }
 
@@ -133,27 +270,36 @@ class _StudentProfileScreenState extends State<StudentProfileScreen> {
     return Scaffold(
       backgroundColor: AppTheme.background,
       body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(20, 20, 20, 30),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildHeader(),
-              const SizedBox(height: 25),
-              _buildProfileCard(),
-              const SizedBox(height: 28),
-              _buildSectionTitle('Personal Information'),
-              const SizedBox(height: 14),
-              _buildInformationCard(),
-              const SizedBox(height: 26),
-              _buildSectionTitle('Account'),
-              const SizedBox(height: 14),
-              _buildAccountOptions(),
-              const SizedBox(height: 25),
-              _buildFooter(),
-            ],
-          ),
-        ),
+        child: _isLoading
+            ? const Center(
+                child: CircularProgressIndicator(),
+              )
+            : SingleChildScrollView(
+                padding: const EdgeInsets.fromLTRB(
+                  20,
+                  20,
+                  20,
+                  30,
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildHeader(),
+                    const SizedBox(height: 25),
+                    _buildProfileCard(),
+                    const SizedBox(height: 28),
+                    _buildSectionTitle('Personal Information'),
+                    const SizedBox(height: 14),
+                    _buildInformationCard(),
+                    const SizedBox(height: 26),
+                    _buildSectionTitle('Account'),
+                    const SizedBox(height: 14),
+                    _buildAccountOptions(),
+                    const SizedBox(height: 25),
+                    _buildFooter(),
+                  ],
+                ),
+              ),
       ),
     );
   }
@@ -239,15 +385,22 @@ class _StudentProfileScreenState extends State<StudentProfileScreen> {
           SizedBox(
             width: double.infinity,
             child: OutlinedButton.icon(
-              onPressed: _editProfile,
-              icon: const Icon(Icons.edit_outlined, size: 17),
-              label: const Text('Edit Profile'),
+              onPressed: _isSaving ? null : _editProfile,
+              icon: const Icon(
+                Icons.edit_outlined,
+                size: 17,
+              ),
+              label: Text(
+                _isSaving ? 'Saving...' : 'Edit Profile',
+              ),
               style: OutlinedButton.styleFrom(
                 foregroundColor: Colors.white,
                 side: BorderSide(
                   color: Colors.white.withValues(alpha: 0.6),
                 ),
-                padding: const EdgeInsets.symmetric(vertical: 13),
+                padding: const EdgeInsets.symmetric(
+                  vertical: 13,
+                ),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(13),
                 ),
@@ -276,7 +429,9 @@ class _StudentProfileScreenState extends State<StudentProfileScreen> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(19),
-        border: Border.all(color: Colors.grey.shade100),
+        border: Border.all(
+          color: Colors.grey.shade100,
+        ),
       ),
       child: Column(
         children: [
@@ -386,7 +541,9 @@ class _StudentProfileScreenState extends State<StudentProfileScreen> {
             Icons.help_outline_rounded,
             'Help & Support',
             'Get assistance with the application',
-            () => _showMessage('Help & Support coming soon!'),
+            () => _showMessage(
+              'Help & Support coming soon!',
+            ),
           ),
           _divider(),
           _accountTile(
@@ -395,18 +552,26 @@ class _StudentProfileScreenState extends State<StudentProfileScreen> {
             'Application information',
             _showAbout,
           ),
+          _divider(),
+          _accountTile(
+            Icons.logout_rounded,
+            'Logout',
+            'Sign out from your student account',
+            _logout,
+            iconColor: Colors.red,
+          ),
         ],
       ),
     );
   }
 
-  // FIX: Material widget keeps ListTile ink effects visible.
   Widget _accountTile(
     IconData icon,
     String title,
     String subtitle,
-    VoidCallback onTap,
-  ) {
+    VoidCallback onTap, {
+    Color? iconColor,
+  }) {
     return Material(
       color: Colors.transparent,
       child: ListTile(
@@ -416,7 +581,7 @@ class _StudentProfileScreenState extends State<StudentProfileScreen> {
         ),
         leading: Icon(
           icon,
-          color: AppTheme.green,
+          color: iconColor ?? AppTheme.green,
           size: 25,
         ),
         title: Text(
@@ -477,6 +642,8 @@ class _StudentProfileScreenState extends State<StudentProfileScreen> {
   }
 
   void _showMessage(String message) {
+    if (!mounted) return;
+
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
