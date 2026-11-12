@@ -41,6 +41,7 @@ class AuthService {
         'updatedAt': FieldValue.serverTimestamp(),
       });
 
+      // Send email verification link.
       await user.sendEmailVerification();
 
       return credential;
@@ -80,6 +81,7 @@ class AuthService {
       return false;
     }
 
+    // Get the latest user information from Firebase.
     await user.reload();
 
     final refreshedUser = _auth.currentUser;
@@ -89,6 +91,10 @@ class AuthService {
     }
 
     if (refreshedUser.emailVerified) {
+      // Refresh Firebase ID token to update email_verified claim.
+      await refreshedUser.getIdToken(true);
+
+      // Update verification status in Firestore.
       await _firestore.collection('users').doc(refreshedUser.uid).update({
         'emailVerified': true,
         'updatedAt': FieldValue.serverTimestamp(),

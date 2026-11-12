@@ -1,7 +1,7 @@
 
 import 'package:flutter/material.dart';
 
-import '../home/home_screen.dart';
+import '../auth/login_screen.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -49,11 +49,12 @@ class _SplashScreenState extends State<SplashScreen>
     super.dispose();
   }
 
+  // Navigate to Login Screen
   void _getStarted() {
     Navigator.of(context).pushReplacement(
       PageRouteBuilder(
         pageBuilder: (_, animation, secondaryAnimation) =>
-            const HomeScreen(),
+            const LoginScreen(),
         transitionsBuilder: (_, animation, secondaryAnimation, child) {
           return FadeTransition(
             opacity: animation,
