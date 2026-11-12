@@ -2,10 +2,13 @@
 import 'package:flutter/material.dart';
 
 import '../../core/services/auth_service.dart';
+import '../../core/services/notification_service.dart';
 import '../../core/theme/app_theme.dart';
+
 import '../map/campus_map_screen.dart';
 import '../events/campus_events_screen.dart';
 import '../profile/student_profile_screen.dart';
+import '../notifications/notifications_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -16,6 +19,9 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   final AuthService _authService = AuthService();
+
+  final NotificationService _notificationService =
+      NotificationService();
 
   int _selectedIndex = 0;
   String _studentName = 'Student';
@@ -52,6 +58,15 @@ class _HomeScreenState extends State<HomeScreen> {
       SnackBar(
         content: Text(message),
         behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+
+  // Open Notifications Screen.
+  void _openNotifications() {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => const NotificationsScreen(),
       ),
     );
   }
@@ -146,6 +161,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  // Header with real-time notification badge.
   Widget _buildHeader() {
     return Row(
       children: [
@@ -188,15 +204,59 @@ class _HomeScreenState extends State<HomeScreen> {
             ],
           ),
         ),
-        IconButton(
-          onPressed: () => _showMessage(
-            'Notifications coming soon!',
-          ),
-          icon: const Icon(
-            Icons.notifications_none_rounded,
-            color: AppTheme.navy,
-            size: 27,
-          ),
+
+        // Firebase unread notification count.
+        StreamBuilder<int>(
+          stream: _notificationService.getUnreadCount(),
+          builder: (context, snapshot) {
+            final unreadCount = snapshot.data ?? 0;
+
+            return IconButton(
+              tooltip: 'Notifications',
+              onPressed: _openNotifications,
+              icon: Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  const Icon(
+                    Icons.notifications_none_rounded,
+                    color: AppTheme.navy,
+                    size: 27,
+                  ),
+                  if (unreadCount > 0)
+                    Positioned(
+                      right: -7,
+                      top: -6,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 5,
+                          vertical: 2,
+                        ),
+                        constraints: const BoxConstraints(
+                          minWidth: 17,
+                          minHeight: 17,
+                        ),
+                        decoration: const BoxDecoration(
+                          color: Colors.red,
+                          shape: BoxShape.circle,
+                        ),
+                        child: Center(
+                          child: Text(
+                            unreadCount > 99
+                                ? '99+'
+                                : unreadCount.toString(),
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 9,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            );
+          },
         ),
       ],
     );
