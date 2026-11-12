@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "646824767511",
+    "project_id": "nsbm-smart-campus",
+    "storage_bucket": "nsbm-smart-campus.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:646824767511:android:37137dcfda1eee96ceec52",
+        "android_client_info": {
+          "package_name": "com.ishen.nsbm_smart_campus"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDkcXfPUFIAo6poyajUxDRpsFQwSrfN8FI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

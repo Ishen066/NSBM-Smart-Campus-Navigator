@@ -400,43 +400,47 @@ class _StudentProfileScreenState extends State<StudentProfileScreen> {
     );
   }
 
+  // FIX: Material widget keeps ListTile ink effects visible.
   Widget _accountTile(
     IconData icon,
     String title,
     String subtitle,
     VoidCallback onTap,
   ) {
-    return ListTile(
-      contentPadding: const EdgeInsets.symmetric(
-        horizontal: 17,
-        vertical: 5,
-      ),
-      leading: Icon(
-        icon,
-        color: AppTheme.green,
-        size: 25,
-      ),
-      title: Text(
-        title,
-        style: const TextStyle(
-          fontSize: 13,
-          fontWeight: FontWeight.w700,
-          color: AppTheme.navy,
+    return Material(
+      color: Colors.transparent,
+      child: ListTile(
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 17,
+          vertical: 5,
         ),
-      ),
-      subtitle: Text(
-        subtitle,
-        style: const TextStyle(
-          fontSize: 11,
+        leading: Icon(
+          icon,
+          color: AppTheme.green,
+          size: 25,
+        ),
+        title: Text(
+          title,
+          style: const TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.w700,
+            color: AppTheme.navy,
+          ),
+        ),
+        subtitle: Text(
+          subtitle,
+          style: const TextStyle(
+            fontSize: 11,
+            color: Colors.blueGrey,
+          ),
+        ),
+        trailing: const Icon(
+          Icons.arrow_forward_ios_rounded,
+          size: 14,
           color: Colors.blueGrey,
         ),
+        onTap: onTap,
       ),
-      trailing: const Icon(
-        Icons.arrow_forward_ios_rounded,
-        size: 14,
-        color: Colors.blueGrey,
-      ),
-      onTap: onTap,
     );
   }
 
