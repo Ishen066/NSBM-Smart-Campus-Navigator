@@ -1,5 +1,7 @@
 
 import 'package:flutter/material.dart';
+
+import '../../core/services/auth_service.dart';
 import '../../core/theme/app_theme.dart';
 import '../map/campus_map_screen.dart';
 import '../events/campus_events_screen.dart';
@@ -13,7 +15,37 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+  final AuthService _authService = AuthService();
+
   int _selectedIndex = 0;
+  String _studentName = 'Student';
+
+  @override
+  void initState() {
+    super.initState();
+    _loadStudentName();
+  }
+
+  // Load logged-in student's name from Firestore.
+  Future<void> _loadStudentName() async {
+    try {
+      final profile = await _authService.getStudentProfile();
+
+      if (!mounted) return;
+
+      if (profile != null) {
+        final fullName = profile['fullName']?.toString().trim();
+
+        if (fullName != null && fullName.isNotEmpty) {
+          setState(() {
+            _studentName = fullName;
+          });
+        }
+      }
+    } catch (e) {
+      debugPrint('Unable to load student name: $e');
+    }
+  }
 
   void _showMessage(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
@@ -36,8 +68,8 @@ class _HomeScreenState extends State<HomeScreen> {
                 : _selectedIndex == 2
                     ? const CampusEventsScreen()
                     : _selectedIndex == 3
-                      ? const StudentProfileScreen()
-                      : _buildOtherPage(),
+                        ? const StudentProfileScreen()
+                        : _buildOtherPage(),
       ),
       bottomNavigationBar: NavigationBar(
         selectedIndex: _selectedIndex,
@@ -79,53 +111,35 @@ class _HomeScreenState extends State<HomeScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _buildHeader(),
-
           const SizedBox(height: 28),
-
           _buildWelcome(),
-
           const SizedBox(height: 22),
-
           _buildSearchBar(),
-
           const SizedBox(height: 28),
-
           _buildSectionTitle(
             'Explore Campus',
             'View all',
             () => setState(() => _selectedIndex = 1),
           ),
-
           const SizedBox(height: 14),
-
           _buildMapPreview(),
-
           const SizedBox(height: 28),
-
           _buildSectionTitle(
             'Quick Access',
             'See all',
             () => setState(() => _selectedIndex = 1),
           ),
-
           const SizedBox(height: 14),
-
           _buildQuickActions(),
-
           const SizedBox(height: 28),
-
           _buildSectionTitle(
             'Campus Updates',
             'All events',
             () => setState(() => _selectedIndex = 2),
           ),
-
           const SizedBox(height: 14),
-
           _buildEventCard(),
-
           const SizedBox(height: 18),
-
           _buildNoticeCard(),
         ],
       ),
@@ -148,9 +162,7 @@ class _HomeScreenState extends State<HomeScreen> {
             size: 27,
           ),
         ),
-
         const SizedBox(width: 12),
-
         const Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -176,7 +188,6 @@ class _HomeScreenState extends State<HomeScreen> {
             ],
           ),
         ),
-
         IconButton(
           onPressed: () => _showMessage(
             'Notifications coming soon!',
@@ -195,17 +206,15 @@ class _HomeScreenState extends State<HomeScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          'Hello, Student 👋',
-          style: TextStyle(
+        Text(
+          'Hello, $_studentName 👋',
+          style: const TextStyle(
             fontSize: 25,
             fontWeight: FontWeight.w800,
             color: AppTheme.navy,
           ),
         ),
-
         const SizedBox(height: 7),
-
         Text(
           'Explore your campus with ease.',
           style: TextStyle(
@@ -235,9 +244,7 @@ class _HomeScreenState extends State<HomeScreen> {
             color: AppTheme.green,
             size: 24,
           ),
-
           const SizedBox(width: 12),
-
           Expanded(
             child: TextField(
               onSubmitted: (value) {
@@ -256,7 +263,6 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
           ),
-
           const Icon(
             Icons.tune_rounded,
             color: AppTheme.navy,
@@ -282,7 +288,6 @@ class _HomeScreenState extends State<HomeScreen> {
             color: AppTheme.navy,
           ),
         ),
-
         TextButton(
           onPressed: onTap,
           child: Text(
@@ -320,7 +325,6 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
           ),
-
           Positioned(
             left: 80,
             top: -50,
@@ -333,7 +337,6 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
           ),
-
           Positioned(
             right: 35,
             bottom: 20,
@@ -346,7 +349,6 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
           ),
-
           Positioned(
             left: 35,
             top: 22,
@@ -355,7 +357,6 @@ class _HomeScreenState extends State<HomeScreen> {
               'Campus',
             ),
           ),
-
           Positioned(
             right: 35,
             top: 65,
@@ -364,7 +365,6 @@ class _HomeScreenState extends State<HomeScreen> {
               'You are here',
             ),
           ),
-
           Positioned(
             left: 16,
             bottom: 15,
@@ -397,7 +397,6 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
           ),
-
           Positioned(
             right: 14,
             bottom: 15,
@@ -513,9 +512,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     size: 22,
                   ),
                 ),
-
                 const SizedBox(width: 9),
-
                 Expanded(
                   child: Text(
                     item['title'] as String,
