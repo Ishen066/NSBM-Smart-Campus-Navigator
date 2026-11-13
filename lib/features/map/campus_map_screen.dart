@@ -4,6 +4,20 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart';
 
+class CampusPlace {
+  final String name;
+  final String category;
+  final LatLng location;
+  final IconData icon;
+
+  const CampusPlace({
+    required this.name,
+    required this.category,
+    required this.location,
+    required this.icon,
+  });
+}
+
 class CampusMapScreen extends StatefulWidget {
   const CampusMapScreen({super.key});
 
@@ -13,18 +27,81 @@ class CampusMapScreen extends StatefulWidget {
 
 class _CampusMapScreenState extends State<CampusMapScreen> {
   final MapController _mapController = MapController();
+  final TextEditingController _searchController =
+      TextEditingController();
 
-  // Approximate NSBM campus centre.
-  static const LatLng _campusCenter = LatLng(
-    6.8209,
-    80.0397,
-  );
+  static const LatLng _campusCenter =
+      LatLng(6.82092, 80.03966);
+
+  static const List<CampusPlace> _places = [
+    CampusPlace(
+      name: 'Auditorium',
+      category: 'Convention Centre',
+      location: LatLng(6.82243, 80.04230),
+      icon: Icons.mic,
+    ),
+    CampusPlace(
+      name: 'Faculty of Technology',
+      category: 'Faculty',
+      location: LatLng(6.82210, 80.04255),
+      icon: Icons.computer,
+    ),
+    CampusPlace(
+      name: 'Academic Building',
+      category: 'University Building',
+      location: LatLng(6.82209, 80.04254),
+      icon: Icons.school,
+    ),
+    CampusPlace(
+      name: 'Lecture Halls Building',
+      category: 'Lecture Halls',
+      location: LatLng(6.82173, 80.04268),
+      icon: Icons.meeting_room,
+    ),
+  ];
 
   Position? _currentPosition;
+  CampusPlace? _selectedPlace;
+
   bool _isLocating = false;
+  bool _showSearchResults = false;
 
   String? _locationMessage;
   bool _locationError = false;
+
+  List<CampusPlace> get _filteredPlaces {
+    final query = _searchController.text.toLowerCase().trim();
+
+    if (query.isEmpty) return _places;
+
+    return _places.where((place) {
+      return place.name.toLowerCase().contains(query) ||
+          place.category.toLowerCase().contains(query);
+    }).toList();
+  }
+
+  void _selectPlace(CampusPlace place) {
+    FocusScope.of(context).unfocus();
+
+    setState(() {
+      _selectedPlace = place;
+      _showSearchResults = false;
+      _searchController.text = place.name;
+    });
+
+    _mapController.move(place.location, 18);
+  }
+
+  void _clearSearch() {
+    setState(() {
+      _searchController.clear();
+      _selectedPlace = null;
+      _showSearchResults = false;
+    });
+
+    FocusScope.of(context).unfocus();
+    _mapController.move(_campusCenter, 16);
+  }
 
   Future<void> _getCurrentLocation() async {
     setState(() {
@@ -54,8 +131,7 @@ class _CampusMapScreenState extends State<CampusMapScreen> {
 
       if (permission == LocationPermission.deniedForever) {
         throw Exception(
-          'Location permission is permanently denied. '
-          'Please enable it in app settings.',
+          'Location permission is permanently denied.',
         );
       }
 
@@ -93,17 +169,20 @@ class _CampusMapScreenState extends State<CampusMapScreen> {
     }
   }
 
-  Future<void> _openAppSettings() async {
-    await Geolocator.openAppSettings();
-  }
-
   void _resetMap() {
+    setState(() {
+      _selectedPlace = null;
+      _searchController.clear();
+      _showSearchResults = false;
+    });
+
     _mapController.move(_campusCenter, 16);
   }
 
   @override
   void dispose() {
     _mapController.dispose();
+    _searchController.dispose();
     super.dispose();
   }
 
@@ -114,7 +193,6 @@ class _CampusMapScreenState extends State<CampusMapScreen> {
       body: SafeArea(
         child: Column(
           children: [
-            // Header
             Padding(
               padding: const EdgeInsets.fromLTRB(
                 20, 18, 20, 12,
@@ -127,7 +205,7 @@ class _CampusMapScreenState extends State<CampusMapScreen> {
                           CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Campus Map',
+                          'Campus Navigation',
                           style: TextStyle(
                             fontSize: 25,
                             fontWeight: FontWeight.bold,
@@ -136,7 +214,7 @@ class _CampusMapScreenState extends State<CampusMapScreen> {
                         ),
                         SizedBox(height: 5),
                         Text(
-                          'Explore NSBM Green University',
+                          'Find your destination at NSBM',
                           style: TextStyle(
                             fontSize: 13,
                             color: Colors.blueGrey,
@@ -157,7 +235,6 @@ class _CampusMapScreenState extends State<CampusMapScreen> {
               ),
             ),
 
-            // Interactive Map
             Expanded(
               child: Stack(
                 children: [
@@ -179,31 +256,59 @@ class _CampusMapScreenState extends State<CampusMapScreen> {
                         maxZoom: 19,
                       ),
 
-                      // Map markers
                       MarkerLayer(
                         markers: [
-                          Marker(
-                            point: _campusCenter,
-                            width: 120,
-                            height: 65,
-                            child: const Column(
-                              children: [
-                                Icon(
-                                  Icons.location_on,
-                                  size: 38,
-                                  color: Color(0xFF087F5B),
+                          ..._places.map((place) {
+                            final isSelected =
+                                _selectedPlace?.name == place.name;
+
+                            return Marker(
+                              point: place.location,
+                              width: 125,
+                              height: 75,
+                              child: GestureDetector(
+                                onTap: () => _selectPlace(place),
+                                child: Column(
+                                  children: [
+                                    Icon(
+                                      place.icon,
+                                      size: 31,
+                                      color: isSelected
+                                          ? Colors.orange
+                                          : const Color(0xFF087F5B),
+                                    ),
+                                    Container(
+                                      padding:
+                                          const EdgeInsets.symmetric(
+                                        horizontal: 6,
+                                        vertical: 3,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: Colors.white,
+                                        borderRadius:
+                                            BorderRadius.circular(6),
+                                        boxShadow: const [
+                                          BoxShadow(
+                                            color: Colors.black12,
+                                            blurRadius: 4,
+                                          ),
+                                        ],
+                                      ),
+                                      child: Text(
+                                        place.name,
+                                        textAlign: TextAlign.center,
+                                        style: const TextStyle(
+                                          fontSize: 9,
+                                          fontWeight: FontWeight.bold,
+                                          color: Color(0xFF071B35),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
                                 ),
-                                Text(
-                                  'NSBM Campus',
-                                  style: TextStyle(
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.bold,
-                                    color: Color(0xFF071B35),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
+                              ),
+                            );
+                          }),
 
                           if (_currentPosition != null)
                             Marker(
@@ -213,26 +318,15 @@ class _CampusMapScreenState extends State<CampusMapScreen> {
                               ),
                               width: 45,
                               height: 45,
-                              child: Container(
-                                decoration: BoxDecoration(
-                                  color: Colors.blue.withValues(
-                                    alpha: 0.15,
-                                  ),
-                                  shape: BoxShape.circle,
-                                ),
-                                child: const Center(
-                                  child: Icon(
-                                    Icons.my_location,
-                                    color: Colors.blue,
-                                    size: 28,
-                                  ),
-                                ),
+                              child: const Icon(
+                                Icons.my_location,
+                                color: Colors.blue,
+                                size: 32,
                               ),
                             ),
                         ],
                       ),
 
-                      // OpenStreetMap attribution
                       RichAttributionWidget(
                         attributions: [
                           TextSourceAttribution(
@@ -243,17 +337,111 @@ class _CampusMapScreenState extends State<CampusMapScreen> {
                     ],
                   ),
 
+                  // Destination search
+                  Positioned(
+                    top: 12,
+                    left: 12,
+                    right: 65,
+                    child: Column(
+                      children: [
+                        Material(
+                          elevation: 4,
+                          borderRadius: BorderRadius.circular(12),
+                          child: TextField(
+                            controller: _searchController,
+                            onChanged: (_) {
+                              setState(() {
+                                _selectedPlace = null;
+                                _showSearchResults = true;
+                              });
+                            },
+                            onTap: () {
+                              setState(() {
+                                _showSearchResults = true;
+                              });
+                            },
+                            decoration: InputDecoration(
+                              hintText: 'Search campus buildings...',
+                              prefixIcon: const Icon(
+                                Icons.search,
+                                color: Color(0xFF087F5B),
+                              ),
+                              suffixIcon: IconButton(
+                                onPressed: _clearSearch,
+                                icon: const Icon(Icons.close),
+                              ),
+                              filled: true,
+                              fillColor: Colors.white,
+                              border: OutlineInputBorder(
+                                borderRadius:
+                                    BorderRadius.circular(12),
+                                borderSide: BorderSide.none,
+                              ),
+                              contentPadding:
+                                  const EdgeInsets.symmetric(
+                                vertical: 14,
+                              ),
+                            ),
+                          ),
+                        ),
+
+                        if (_showSearchResults &&
+                            _searchController.text.isNotEmpty)
+                          Container(
+                            margin: const EdgeInsets.only(top: 5),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(12),
+                              boxShadow: const [
+                                BoxShadow(
+                                  color: Colors.black12,
+                                  blurRadius: 5,
+                                ),
+                              ],
+                            ),
+                            child: _filteredPlaces.isEmpty
+                                ? const Padding(
+                                    padding: EdgeInsets.all(14),
+                                    child: Text(
+                                      'No buildings found.',
+                                    ),
+                                  )
+                                : Column(
+                                    children: _filteredPlaces.map(
+                                      (place) {
+                                        return ListTile(
+                                          dense: true,
+                                          leading: Icon(
+                                            place.icon,
+                                            color: const Color(
+                                              0xFF087F5B,
+                                            ),
+                                          ),
+                                          title: Text(place.name),
+                                          subtitle: Text(
+                                            place.category,
+                                          ),
+                                          onTap: () =>
+                                              _selectPlace(place),
+                                        );
+                                      },
+                                    ).toList(),
+                                  ),
+                          ),
+                      ],
+                    ),
+                  ),
+
                   // Map controls
                   Positioned(
-                    right: 14,
-                    top: 14,
+                    right: 12,
+                    top: 85,
                     child: Column(
                       children: [
                         _mapButton(
                           icon: Icons.add,
                           onPressed: () {
-                            final camera =
-                                _mapController.camera;
+                            final camera = _mapController.camera;
                             _mapController.move(
                               camera.center,
                               camera.zoom + 1,
@@ -264,8 +452,7 @@ class _CampusMapScreenState extends State<CampusMapScreen> {
                         _mapButton(
                           icon: Icons.remove,
                           onPressed: () {
-                            final camera =
-                                _mapController.camera;
+                            final camera = _mapController.camera;
                             _mapController.move(
                               camera.center,
                               camera.zoom - 1,
@@ -280,11 +467,72 @@ class _CampusMapScreenState extends State<CampusMapScreen> {
                       ],
                     ),
                   ),
+
+                  // Selected destination card
+                  if (_selectedPlace != null)
+                    Positioned(
+                      left: 12,
+                      right: 12,
+                      bottom: 12,
+                      child: Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(16),
+                          boxShadow: const [
+                            BoxShadow(
+                              color: Colors.black26,
+                              blurRadius: 10,
+                            ),
+                          ],
+                        ),
+                        child: Row(
+                          children: [
+                            const CircleAvatar(
+                              backgroundColor: Color(0xFFE5F4EE),
+                              child: Icon(
+                                Icons.location_on,
+                                color: Color(0xFF087F5B),
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment:
+                                    CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    _selectedPlace!.name,
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 15,
+                                    ),
+                                  ),
+                                  Text(
+                                    _selectedPlace!.category,
+                                    style: const TextStyle(
+                                      color: Colors.blueGrey,
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const Text(
+                              'Selected',
+                              style: TextStyle(
+                                color: Color(0xFF087F5B),
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
                 ],
               ),
             ),
 
-            // Current location information
             Container(
               width: double.infinity,
               margin: const EdgeInsets.all(14),
@@ -317,37 +565,20 @@ class _CampusMapScreenState extends State<CampusMapScreen> {
                     ],
                   ),
                   const SizedBox(height: 10),
-
-                  if (_currentPosition != null)
-                    Text(
-                      'Latitude: ${_currentPosition!.latitude.toStringAsFixed(6)}\n'
-                      'Longitude: ${_currentPosition!.longitude.toStringAsFixed(6)}',
-                      style: const TextStyle(fontSize: 12),
-                    )
-                  else
-                    Text(
-                      _locationMessage ??
-                          'Find your current location using GPS.',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: _locationError
-                            ? Colors.red
-                            : Colors.blueGrey,
-                      ),
+                  Text(
+                    _currentPosition != null
+                        ? 'Latitude: ${_currentPosition!.latitude.toStringAsFixed(6)}\n'
+                          'Longitude: ${_currentPosition!.longitude.toStringAsFixed(6)}'
+                        : _locationMessage ??
+                            'Use GPS to find your current location.',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: _locationError
+                          ? Colors.red
+                          : Colors.blueGrey,
                     ),
-
-                  if (_locationError &&
-                      (_locationMessage?.contains(
-                            'permanently denied',
-                          ) ??
-                          false))
-                    TextButton(
-                      onPressed: _openAppSettings,
-                      child: const Text('Open App Settings'),
-                    ),
-
+                  ),
                   const SizedBox(height: 10),
-
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton.icon(
@@ -370,15 +601,13 @@ class _CampusMapScreenState extends State<CampusMapScreen> {
                             : 'My Location',
                       ),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor:
-                            const Color(0xFF087F5B),
+                        backgroundColor: const Color(0xFF087F5B),
                         foregroundColor: Colors.white,
                         padding: const EdgeInsets.symmetric(
                           vertical: 14,
                         ),
                         shape: RoundedRectangleBorder(
-                          borderRadius:
-                              BorderRadius.circular(12),
+                          borderRadius: BorderRadius.circular(12),
                         ),
                       ),
                     ),
